@@ -15,7 +15,7 @@ class AuthController extends Controller
 {
     use TraitsApiResponseTrait;
 
-    public function Register(RegisterRequest $request){
+    public function register(RegisterRequest $request){
     
         $validatedData = $request->validated();
         $roleId = Role::where('intitule', '=', 'user')->first();
@@ -33,7 +33,7 @@ class AuthController extends Controller
         return $this->successResponse($data, 'User registered successfully', 201);
     }
 
-    public function Login(Request $request)
+    public function login(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'email' => 'required|string|email|max:255',
@@ -54,7 +54,7 @@ class AuthController extends Controller
 
         return $this->successResponse($data, 'User logged in successfully', 200);
     }
-    public function Logout(Request $request)
+    public function logout(Request $request)
     {
         $request->user()->tokens()->delete();
 
