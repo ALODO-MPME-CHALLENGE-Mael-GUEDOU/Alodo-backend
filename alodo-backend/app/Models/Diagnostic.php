@@ -21,4 +21,9 @@ class Diagnostic extends Model
     {
         return $this->hasOne(Result::class);
     }
+
+    public function responses()
+    {
+        return $this->hasMany(Responses::class);
+    }
 }

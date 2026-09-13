@@ -11,10 +11,24 @@ class Question extends Model
         'intitule',
         'ordre',
         'type',
+        'options',
+        'question_code',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'options' => 'array',
+        ];
+    }
 
     public function domain()
     {
         return $this->belongsTo(Domain::class);
+    }
+
+    public function responses()
+    {
+        return $this->hasMany(Responses::class);
     }
 }

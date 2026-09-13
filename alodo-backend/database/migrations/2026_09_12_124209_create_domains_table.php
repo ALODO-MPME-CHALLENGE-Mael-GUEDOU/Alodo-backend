@@ -14,7 +14,8 @@ return new class extends Migration
         Schema::create('domains', function (Blueprint $table) {
             $table->id();
             $table->string('intitule');
-            $table->text('description');
+            $table->text('description')->nullable();
+            $table->boolean('is_scored')->default(true);
             $table->timestamps();
         });
     }

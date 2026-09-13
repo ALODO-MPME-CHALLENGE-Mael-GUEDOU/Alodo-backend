@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\RegisterRequest;
+use App\Models\Diagnostic;
+use App\Models\Role;
+use App\Models\User;
 use App\TraitsApiResponseTrait;
 use Illuminate\Http\Request;
-use App\Http\Requests\RegisterRequest;
-use App\Models\User;
-use App\Models\Role;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
@@ -15,8 +17,9 @@ class AuthController extends Controller
 {
     use TraitsApiResponseTrait;
 
-    public function register(RegisterRequest $request){
-    
+    public function register(RegisterRequest $request)
+    {
+
         $validatedData = $request->validated();
         $roleId = Role::where('intitule', '=', 'user')->first();
         if (! $roleId) {
@@ -24,11 +27,19 @@ class AuthController extends Controller
         }
         $validatedData['role_id'] = $roleId->id;
 
-        $user = User::create($validatedData);
-        $user->load('role');
+        $data = DB::transaction(function () use ($validatedData): array {
+            $user = User::create($validatedData);
+            Diagnostic::create([
+                'user_id' => $user->id,
+                'status' => 'baseline',
+            ]);
+            $user->load('role');
 
-        $data['token'] = $user->createToken('auth_token')->plainTextToken;
-        $data['user'] = $user;
+            return [
+                'token' => $user->createToken('auth_token')->plainTextToken,
+                'user' => $user,
+            ];
+        });
 
         return $this->successResponse($data, 'User registered successfully', 201);
     }
@@ -54,6 +65,7 @@ class AuthController extends Controller
 
         return $this->successResponse($data, 'User logged in successfully', 200);
     }
+
     public function logout(Request $request)
     {
         $request->user()->tokens()->delete();

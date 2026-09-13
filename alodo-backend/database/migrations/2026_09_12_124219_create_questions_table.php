@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('intitule');
             $table->integer('ordre');
             $table->string('type');
+            $table->json('options')->nullable();
+            $table->string('question_code')->nullable()->unique();
             $table->timestamps();
         });
     }

@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('diagnostics', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->enum('status', ['baseline', 'draft', 'pending', 'completed'])->default('pending');
-            $table->datetimestamp('completed_at')->nullable();
+            $table->enum('status', ['baseline', 'pending', 'completed'])->default('baseline');
+            $table->timestamp('completed_at')->nullable();
             $table->timestamps();
         });
     }

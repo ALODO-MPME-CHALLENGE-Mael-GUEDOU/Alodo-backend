@@ -11,12 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('results', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('diagnostic_id')->constrained('diagnostics')->onDelete('cascade')->unique();
-            $table->decimal('score', 5, 2);
-            $table->json('analysis');
-            $table->timestamps();
+        Schema::table('domains', function (Blueprint $table) {
+            $table->unsignedInteger('ordre')->unique()->after('description');
         });
     }
 
@@ -25,6 +21,9 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('results');
+        Schema::table('domains', function (Blueprint $table) {
+
+            $table->dropColumn('ordre');
+        });
     }
 };

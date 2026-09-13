@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->foreignId('question_id')->constrained('questions')->onDelete('restrict');
             $table->foreignId('diagnostic_id')->constrained('diagnostics')->onDelete('restrict');
+            $table->json('valeur');
+            $table->unique(['question_id', 'diagnostic_id']);
             $table->timestamps();
         });
     }
