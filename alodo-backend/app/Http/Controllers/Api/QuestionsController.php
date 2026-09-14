@@ -7,13 +7,30 @@ use App\Http\Requests\DomainRequest;
 use App\Http\Requests\QuestionRequest;
 use App\Models\Domain;
 use App\TraitsApiResponseTrait;
+use OpenApi\Annotations as OA;
 
 class QuestionsController extends Controller
 {
     use TraitsApiResponseTrait;
 
     /**
-     * Store a new domain.
+     * @OA\Post(
+     *     path="/api/store/domains",
+     *     operationId="storeDomain",
+     *     summary="Créer un domaine",
+     *     description="QuestionsController::storeDomain. Rôle admin uniquement. ordre doit être unique entre 1 et 8 ; un intitulé déjà utilisé produit 400. Général doit rester is_scored=false conformément au barème. Aucune route de liste, modification ou suppression administrateur.",
+     *     tags={"Administration"},
+     *     security={{"bearerAuth"={}}},
+     *
+     *     @OA\RequestBody(required=true, @OA\JsonContent(ref="#/components/schemas/DomainRequest")),
+     *
+     *     @OA\Response(response=201, description="Succès", @OA\JsonContent(type="object", @OA\Property(property="success", type="boolean", enum={true}), @OA\Property(property="message", type="string"), @OA\Property(property="data", ref="#/components/schemas/Domain"), required={"success", "message", "data"})),
+     *     @OA\Response(response=401, ref="#/components/responses/Unauthorized"),
+     *     @OA\Response(response=403, ref="#/components/responses/Forbidden"),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=400, ref="#/components/responses/BadRequest"),
+     *     @OA\Response(response=422, ref="#/components/responses/Validation")
+     * )
      */
     public function storeDomain(DomainRequest $request)
     {
@@ -32,7 +49,22 @@ class QuestionsController extends Controller
     }
 
     /**
-     * Store a new question.
+     * @OA\Post(
+     *     path="/api/store/questions",
+     *     operationId="storeQuestion",
+     *     summary="Créer une question",
+     *     description="QuestionsController::storeQuestion. Rôle admin uniquement. Options requises pour les choix : value et label non vides, value distinctes. Ne pas envoyer d’options pour text/number. question_code n’est pas accepté par la validation actuelle. Ajouter une question sans adapter le code et le barème peut empêcher toute finalisation ; cet endpoint ne configure pas le scoring.",
+     *     tags={"Administration"},
+     *     security={{"bearerAuth"={}}},
+     *
+     *     @OA\RequestBody(required=true, @OA\JsonContent(ref="#/components/schemas/QuestionRequest")),
+     *
+     *     @OA\Response(response=201, description="Succès", @OA\JsonContent(type="object", @OA\Property(property="success", type="boolean", enum={true}), @OA\Property(property="message", type="string"), @OA\Property(property="data", ref="#/components/schemas/Question"), required={"success", "message", "data"})),
+     *     @OA\Response(response=401, ref="#/components/responses/Unauthorized"),
+     *     @OA\Response(response=403, ref="#/components/responses/Forbidden"),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=422, ref="#/components/responses/Validation")
+     * )
      */
     public function storeQuestion(QuestionRequest $request)
     {

@@ -1,2164 +1,2119 @@
 {
-  "openapi": "3.0.3",
-  "info": {
-    "title": "ALODO — API du diagnostic MPME",
-    "version": "1.0.0",
-    "description": "Contrat des contrôleurs du backend, maintenu dans public/openapi.json.\n\n1. Créer un compte ou se connecter.\n2. Copier data.token dans Authorize (sans Bearer).\n3. Charger le questionnaire et utiliser ses identifiants/options réels.\n4. Sauvegarder pending puis terminer completed.\n5. Lire le résultat et ses états IA.\n\nLes actions Try it out exécutent réellement les endpoints. Les exemples sont fictifs, les IDs ne sont pas fixes. Envoyer Accept: application/json. Les erreurs Laravel ne possèdent pas toujours success. Les rôles user et admin ont des accès distincts."
-  },
-  "servers": [
-    {
-      "url": "/",
-      "description": "Même origine que le backend servant Swagger UI"
-    }
-  ],
-  "tags": [
-    {
-      "name": "Authentification"
+    "openapi": "3.0.3",
+    "info": {
+        "title": "ALODO — API du diagnostic MPME",
+        "description": "Documentation générée depuis les annotations des contrôleurs. Obtenir data.token via login/register, puis utiliser Authorize. Les identifiants des exemples sont fictifs.",
+        "version": "1.0.0"
     },
-    {
-      "name": "Diagnostic"
-    },
-    {
-      "name": "Résultats"
-    },
-    {
-      "name": "Administration"
-    }
-  ],
-  "security": [
-    {
-      "bearerAuth": []
-    }
-  ],
-  "paths": {
-    "/api/register": {
-      "post": {
-        "tags": [
-          "Authentification"
-        ],
-        "operationId": "register",
-        "summary": "Créer un compte entreprise",
-        "description": "AuthController::register. Crée utilisateur, diagnostic baseline et token dans une transaction. Le rôle user est attribué par le serveur. Aucun paramètre de rôle accepté.",
-        "responses": {
-          "201": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/AuthData"
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "message",
-                    "data"
-                  ]
-                }
-              }
-            }
-          },
-          "422": {
-            "$ref": "#/components/responses/Validation"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          }
-        },
-        "security": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RegisterRequest"
-              }
-            }
-          }
+    "servers": [
+        {
+            "url": "/",
+            "description": "Backend courant"
         }
-      }
-    },
-    "/api/login": {
-      "post": {
-        "tags": [
-          "Authentification"
-        ],
-        "operationId": "login",
-        "summary": "Se connecter",
-        "description": "AuthController::login. Une connexion réussie supprime tous les anciens tokens du compte avant de créer le nouveau.",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/AuthData"
+    ],
+    "paths": {
+        "/api/register": {
+            "post": {
+                "tags": [
+                    "Authentification"
+                ],
+                "summary": "Créer un compte entreprise",
+                "description": "AuthController::register. Crée utilisateur, diagnostic baseline et token dans une transaction. Le rôle user est attribué par le serveur. Aucun paramètre de rôle accepté.",
+                "operationId": "register",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/RegisterRequest"
+                            }
+                        }
                     }
-                  },
-                  "required": [
-                    "success",
-                    "message",
-                    "data"
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "422": {
-            "$ref": "#/components/responses/Validation"
-          }
-        },
-        "security": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/LoginRequest"
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/logout": {
-      "post": {
-        "tags": [
-          "Authentification"
-        ],
-        "operationId": "logout",
-        "summary": "Se déconnecter",
-        "description": "AuthController::logout. Révoque tous les tokens du compte, pas uniquement le token courant.",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "type": "string",
-                      "nullable": true,
-                      "enum": [
-                        null
-                      ]
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "message",
-                    "data"
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      }
-    },
-    "/api/user": {
-      "get": {
-        "tags": [
-          "Authentification"
-        ],
-        "operationId": "currentUser",
-        "summary": "Lire le compte connecté",
-        "description": "Closure routes/api.php. Réponse sans enveloppe success/message/data. La relation role n’est pas chargée.",
-        "responses": {
-          "200": {
-            "description": "Utilisateur directement, sans enveloppe.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/User"
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          }
-        }
-      }
-    },
-    "/api/display/questionnaire": {
-      "get": {
-        "tags": [
-          "Diagnostic"
-        ],
-        "operationId": "indexQuestionnaire",
-        "summary": "Charger le questionnaire et les réponses",
-        "description": "DiagnosticController::indexQuestionnaire. Rôle user. Domaines non vides triés par ordre, questions par ordre puis id. Retourne les réponses du diagnostic connecté. Toutes les questions, y compris Général non noté, sont obligatoires à la finalisation. Un diagnostic completed reste consultable.",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Questionnaire"
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "message",
-                    "data"
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          }
-        }
-      }
-    },
-    "/api/store/answers": {
-      "post": {
-        "tags": [
-          "Diagnostic"
-        ],
-        "operationId": "storeAnswers",
-        "summary": "Enregistrer ou terminer le diagnostic",
-        "description": "DiagnosticController::storeAnswers. Rôle user, propriétaire seulement. pending sauvegarde les réponses envoyées sans supprimer les autres. completed revalide toutes les réponses, calcule et persiste le résultat, termine le diagnostic puis déclenche le job IA. La finalisation est définitive. result=null pour pending. Pour completed, lire analysis_status : l’IA peut être en attente, en cours, terminée ou en échec. Un score global null est possible même avec toutes les réponses. Pas de tableau responses vide, même pour completed. Le barème actuel requiert les 12 questions configurées (texte/choix unique), malgré les 4 types acceptés par la validation des réponses.",
-        "responses": {
-          "201": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/AnswersData"
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "message",
-                    "data"
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "422": {
-            "$ref": "#/components/responses/Validation"
-          },
-          "500": {
-            "$ref": "#/components/responses/ServerError"
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/AnswersRequest"
-              },
-              "examples": {
-                "partial": {
-                  "summary": "Sauvegarde partielle (adapter les IDs et valeurs au questionnaire)",
-                  "value": {
-                    "diagnostic_id": 1,
-                    "status": "pending",
-                    "responses": [
-                      {
-                        "question_id": 1,
-                        "valeur": "Transformation alimentaire"
-                      }
-                    ]
-                  }
                 },
-                "complete": {
-                  "summary": "Finalisation ; les autres réponses doivent déjà être enregistrées",
-                  "value": {
-                    "diagnostic_id": 1,
-                    "status": "completed",
-                    "responses": [
-                      {
-                        "question_id": 1,
-                        "valeur": "Transformation alimentaire"
-                      }
-                    ]
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/diagnostics/{diagnostic}/result": {
-      "get": {
-        "tags": [
-          "Résultats"
-        ],
-        "operationId": "showResult",
-        "summary": "Consulter le résultat persisté",
-        "description": "DiagnosticController::showResult. Rôle user, propriétaire seulement. 404 si aucun résultat. Le score est une chaîne décimale ou null ; scoring_details contient des nombres. Au moins 2 questions évaluables par domaine et les 3 domaines évaluables sont requis pour le score global. Général n’est pas noté. Lire régulièrement pendant analysis_status=pending/processing ; arrêter à completed/failed. Aucun appel IA n’est déclenché par cette lecture.",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
+                "responses": {
+                    "201": {
+                        "description": "Succès",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data"
+                                    ],
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "enum": [
+                                                true
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AuthData"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
                     },
-                    "message": {
-                      "type": "string"
+                    "422": {
+                        "$ref": "#/components/responses/Validation"
                     },
-                    "data": {
-                      "$ref": "#/components/schemas/Result"
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
                     }
-                  },
-                  "required": [
-                    "success",
-                    "message",
-                    "data"
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          }
-        },
-        "parameters": [
-          {
-            "name": "diagnostic",
-            "in": "path",
-            "required": true,
-            "description": "ID du diagnostic appartenant au compte connecté, obtenu via le questionnaire. Ce n’est pas l’ID du résultat.",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "example": 1
-            }
-          }
-        ]
-      }
-    },
-    "/api/diagnostics/{diagnostic}/interpretation/retry": {
-      "post": {
-        "tags": [
-          "Résultats"
-        ],
-        "operationId": "retryInterpretation",
-        "summary": "Relancer une interprétation échouée",
-        "description": "DiagnosticController::retryInterpretation. Rôle user, propriétaire seulement. Aucun corps nécessaire. Accepte uniquement analysis_status=failed avec les données nécessaires. Ne recalcule pas le score. Le 202 confirme la relance, pas la réussite de l’IA ; relire le résultat. Le job nécessite un worker avec une connexion de queue asynchrone.",
-        "responses": {
-          "202": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Result"
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "message",
-                    "data"
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/Conflict"
-          }
-        },
-        "parameters": [
-          {
-            "name": "diagnostic",
-            "in": "path",
-            "required": true,
-            "description": "ID du diagnostic appartenant au compte connecté, obtenu via le questionnaire. Ce n’est pas l’ID du résultat.",
-            "schema": {
-              "type": "integer",
-              "minimum": 1,
-              "example": 1
-            }
-          }
-        ]
-      }
-    },
-    "/api/store/domains": {
-      "post": {
-        "tags": [
-          "Administration"
-        ],
-        "operationId": "storeDomain",
-        "summary": "Créer un domaine",
-        "description": "QuestionsController::storeDomain. Rôle admin uniquement. ordre doit être unique entre 1 et 8 ; un intitulé déjà utilisé produit 400. Général doit rester is_scored=false conformément au barème. Aucune route de liste, modification ou suppression administrateur.",
-        "responses": {
-          "201": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Domain"
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "message",
-                    "data"
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "422": {
-            "$ref": "#/components/responses/Validation"
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DomainRequest"
-              },
-              "examples": {
-                "domain": {
-                  "value": {
-                    "intitule": "Général",
-                    "description": "Contexte de l’entreprise",
-                    "ordre": 4,
-                    "is_scored": false
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/store/questions": {
-      "post": {
-        "tags": [
-          "Administration"
-        ],
-        "operationId": "storeQuestion",
-        "summary": "Créer une question",
-        "description": "QuestionsController::storeQuestion. Rôle admin uniquement. Options requises pour les choix : value et label non vides, value distinctes. Ne pas envoyer d’options pour text/number. question_code n’est pas accepté par la validation actuelle. Ajouter une question sans adapter le code et le barème peut empêcher toute finalisation ; cet endpoint ne configure pas le scoring.",
-        "responses": {
-          "201": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "enum": [
-                        true
-                      ]
-                    },
-                    "message": {
-                      "type": "string"
-                    },
-                    "data": {
-                      "$ref": "#/components/schemas/Question"
-                    }
-                  },
-                  "required": [
-                    "success",
-                    "message",
-                    "data"
-                  ]
-                }
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "422": {
-            "$ref": "#/components/responses/Validation"
-          }
-        },
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/QuestionRequest"
-              },
-              "examples": {
-                "choice": {
-                  "value": {
-                    "intitule": "Comment suivez-vous vos ventes ?",
-                    "domain_id": 1,
-                    "ordre": 1,
-                    "type": "unique_choice",
-                    "options": [
-                      {
-                        "value": "memoire",
-                        "label": "De mémoire"
-                      },
-                      {
-                        "value": "registre",
-                        "label": "Dans un registre"
-                      }
-                    ]
-                  }
                 },
-                "multiple": {
-                  "value": {
-                    "intitule": "Quels canaux utilisez-vous ?",
-                    "domain_id": 1,
-                    "ordre": 2,
-                    "type": "multiple_choice",
-                    "options": [
-                      {
-                        "value": "boutique",
-                        "label": "Boutique"
-                      },
-                      {
-                        "value": "telephone",
-                        "label": "Téléphone"
-                      }
-                    ]
-                  }
+                "security": []
+            }
+        },
+        "/api/login": {
+            "post": {
+                "tags": [
+                    "Authentification"
+                ],
+                "summary": "Se connecter",
+                "description": "AuthController::login. Une connexion réussie supprime tous les anciens tokens du compte avant de créer le nouveau.",
+                "operationId": "login",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LoginRequest"
+                            }
+                        }
+                    }
                 },
-                "text": {
-                  "value": {
-                    "intitule": "Décrivez votre activité",
-                    "domain_id": 1,
-                    "ordre": 3,
-                    "type": "text"
-                  }
-                }
-              }
+                "responses": {
+                    "200": {
+                        "description": "Succès",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data"
+                                    ],
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "enum": [
+                                                true
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AuthData"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Validation"
+                    }
+                },
+                "security": []
             }
-          }
-        }
-      }
-    }
-  },
-  "components": {
-    "securitySchemes": {
-      "bearerAuth": {
-        "type": "http",
-        "scheme": "bearer",
-        "description": "Token personnel Laravel Sanctum (pas un JWT). Obtenir data.token via register/login."
-      }
-    },
-    "schemas": {
-      "Role": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "minimum": 1,
-            "example": 1
-          },
-          "intitule": {
-            "type": "string",
-            "enum": [
-              "user",
-              "admin"
-            ]
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          }
         },
-        "required": [
-          "id",
-          "intitule"
-        ]
-      },
-      "User": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "minimum": 1,
-            "example": 1
-          },
-          "name": {
-            "type": "string"
-          },
-          "email": {
-            "type": "string",
-            "format": "email"
-          },
-          "role_id": {
-            "type": "integer",
-            "minimum": 1,
-            "example": 1
-          },
-          "email_verified_at": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "email",
-          "role_id"
-        ]
-      },
-      "AuthenticatedUser": {
-        "allOf": [
-          {
-            "$ref": "#/components/schemas/User"
-          },
-          {
-            "type": "object",
-            "properties": {
-              "role": {
-                "$ref": "#/components/schemas/Role"
-              }
-            },
-            "required": [
-              "role"
-            ]
-          }
-        ]
-      },
-      "AuthData": {
-        "type": "object",
-        "properties": {
-          "token": {
-            "type": "string",
-            "description": "Token Sanctum à copier dans Authorize, sans le préfixe Bearer."
-          },
-          "user": {
-            "$ref": "#/components/schemas/AuthenticatedUser"
-          }
-        },
-        "required": [
-          "token",
-          "user"
-        ]
-      },
-      "RegisterRequest": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255,
-            "example": "Atelier Exemple"
-          },
-          "email": {
-            "type": "string",
-            "format": "email",
-            "maxLength": 255,
-            "example": "entreprise@example.com"
-          },
-          "password": {
-            "type": "string",
-            "minLength": 8,
-            "format": "password",
-            "example": "ExempleMotDePasse2026!"
-          }
-        },
-        "required": [
-          "name",
-          "email",
-          "password"
-        ]
-      },
-      "LoginRequest": {
-        "type": "object",
-        "properties": {
-          "email": {
-            "type": "string",
-            "format": "email",
-            "maxLength": 255,
-            "example": "entreprise@example.com"
-          },
-          "password": {
-            "type": "string",
-            "minLength": 8,
-            "format": "password",
-            "example": "ExempleMotDePasse2026!"
-          }
-        },
-        "required": [
-          "email",
-          "password"
-        ]
-      },
-      "Error": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "enum": [
-              false
-            ]
-          },
-          "message": {
-            "type": "string"
-          },
-          "errors": {
-            "type": "object",
-            "nullable": true,
-            "additionalProperties": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-          }
-        },
-        "required": [
-          "message"
-        ],
-        "description": "Les erreurs Laravel peuvent ne contenir que message. Les contrôleurs peuvent ajouter success:false et errors:null."
-      },
-      "ValidationError": {
-        "type": "object",
-        "properties": {
-          "success": {
-            "type": "boolean",
-            "enum": [
-              false
-            ]
-          },
-          "message": {
-            "type": "string"
-          },
-          "errors": {
-            "type": "object",
-            "additionalProperties": {
-              "type": "array",
-              "items": {
-                "type": "string"
-              }
-            }
-          }
-        },
-        "required": [
-          "message",
-          "errors"
-        ],
-        "example": {
-          "message": "The given data was invalid.",
-          "errors": {
-            "responses.0.valeur": [
-              "The selected responses.0.valeur is invalid."
-            ]
-          }
-        }
-      },
-      "Option": {
-        "type": "object",
-        "properties": {
-          "value": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100
-          },
-          "label": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255
-          }
-        },
-        "required": [
-          "value",
-          "label"
-        ],
-        "additionalProperties": false
-      },
-      "DomainRequest": {
-        "type": "object",
-        "properties": {
-          "intitule": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100
-          },
-          "description": {
-            "type": "string",
-            "nullable": true
-          },
-          "ordre": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 8,
-            "description": "Unique parmi tous les domaines."
-          },
-          "is_scored": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "intitule",
-          "ordre",
-          "is_scored"
-        ]
-      },
-      "Domain": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "minimum": 1,
-            "example": 1
-          },
-          "intitule": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100
-          },
-          "description": {
-            "type": "string",
-            "nullable": true
-          },
-          "ordre": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 8,
-            "description": "Unique parmi tous les domaines."
-          },
-          "is_scored": {
-            "type": "boolean"
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          }
-        },
-        "required": [
-          "id",
-          "intitule",
-          "ordre",
-          "is_scored"
-        ]
-      },
-      "QuestionRequest": {
-        "oneOf": [
-          {
-            "type": "object",
-            "properties": {
-              "intitule": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 255
-              },
-              "domain_id": {
-                "type": "integer",
-                "minimum": 1,
-                "example": 1
-              },
-              "ordre": {
-                "type": "integer",
-                "minimum": 1
-              },
-              "type": {
-                "type": "string",
-                "enum": [
-                  "unique_choice",
-                  "multiple_choice"
+        "/api/logout": {
+            "post": {
+                "tags": [
+                    "Authentification"
+                ],
+                "summary": "Se déconnecter",
+                "description": "AuthController::logout. Révoque tous les tokens du compte, pas uniquement le token courant.",
+                "operationId": "logout",
+                "responses": {
+                    "200": {
+                        "description": "Succès",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data"
+                                    ],
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "enum": [
+                                                true
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "type": "string",
+                                            "enum": [
+                                                null
+                                            ],
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
                 ]
-              },
-              "options": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/components/schemas/Option"
-                },
-                "minItems": 2,
-                "description": "Les value doivent être distinctes dans une même question."
-              }
-            },
-            "required": [
-              "intitule",
-              "domain_id",
-              "ordre",
-              "type",
-              "options"
-            ]
-          },
-          {
-            "type": "object",
-            "properties": {
-              "intitule": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 255
-              },
-              "domain_id": {
-                "type": "integer",
-                "minimum": 1,
-                "example": 1
-              },
-              "ordre": {
-                "type": "integer",
-                "minimum": 1
-              },
-              "type": {
-                "type": "string",
-                "enum": [
-                  "text",
-                  "number"
-                ]
-              }
-            },
-            "required": [
-              "intitule",
-              "domain_id",
-              "ordre",
-              "type"
-            ]
-          }
-        ],
-        "description": "Options obligatoires pour les choix ; omettre options pour texte/nombre. question_code ne fait pas partie des champs validés par cet endpoint."
-      },
-      "Question": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "minimum": 1,
-            "example": 1
-          },
-          "intitule": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255
-          },
-          "domain_id": {
-            "type": "integer",
-            "minimum": 1,
-            "example": 1
-          },
-          "ordre": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "unique_choice",
-              "multiple_choice",
-              "text",
-              "number"
-            ]
-          },
-          "options": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Option"
-            },
-            "minItems": 2,
-            "description": "Les value doivent être distinctes dans une même question.",
-            "nullable": true
-          },
-          "question_code": {
-            "type": "string",
-            "nullable": true
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          }
-        },
-        "required": [
-          "id",
-          "intitule",
-          "domain_id",
-          "ordre",
-          "type"
-        ]
-      },
-      "QuestionnaireQuestion": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "minimum": 1,
-            "example": 1
-          },
-          "intitule": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "unique_choice",
-              "multiple_choice",
-              "text",
-              "number"
-            ]
-          },
-          "ordre": {
-            "type": "integer"
-          },
-          "options": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Option"
-            },
-            "nullable": true
-          },
-          "valeur": {
-            "oneOf": [
-              {
-                "type": "string",
-                "nullable": true
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "intitule",
-          "type",
-          "ordre",
-          "options",
-          "valeur"
-        ]
-      },
-      "QuestionnaireDomain": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "minimum": 1,
-            "example": 1
-          },
-          "intitule": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string",
-            "nullable": true
-          },
-          "ordre": {
-            "type": "integer"
-          },
-          "is_scored": {
-            "type": "boolean"
-          },
-          "questions": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/QuestionnaireQuestion"
             }
-          }
         },
-        "required": [
-          "id",
-          "intitule",
-          "description",
-          "ordre",
-          "is_scored",
-          "questions"
-        ]
-      },
-      "Questionnaire": {
-        "type": "object",
-        "properties": {
-          "diagnostic": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "integer",
-                "minimum": 1,
-                "example": 1
-              },
-              "status": {
-                "type": "string",
-                "enum": [
-                  "baseline",
-                  "pending",
-                  "completed"
-                ]
-              },
-              "completed_at": {
-                "type": "string",
-                "nullable": true,
-                "description": "Date brute du modèle Diagnostic, sans cast datetime ; null avant finalisation.",
-                "example": "2026-09-14 10:00:00"
-              }
-            },
-            "required": [
-              "id",
-              "status",
-              "completed_at"
-            ]
-          },
-          "domains": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/QuestionnaireDomain"
-            }
-          }
-        },
-        "required": [
-          "diagnostic",
-          "domains"
-        ]
-      },
-      "AnswerInput": {
-        "type": "object",
-        "properties": {
-          "question_id": {
-            "type": "integer",
-            "minimum": 1,
-            "example": 1
-          },
-          "valeur": {
-            "oneOf": [
-              {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 5000
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "array",
-                "items": {
-                  "type": "string",
-                  "minLength": 1
+        "/api/user": {
+            "get": {
+                "tags": [
+                    "Authentification"
+                ],
+                "summary": "Lire le compte connecté",
+                "description": "Closure routes/api.php. Réponse sans enveloppe success/message/data. La relation role n’est pas chargée.",
+                "operationId": "currentUser",
+                "responses": {
+                    "200": {
+                        "description": "Utilisateur directement, sans enveloppe.",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/User"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    }
                 },
-                "minItems": 1,
-                "uniqueItems": true
-              }
-            ],
-            "description": "Dépend du type de la question en base. Choix unique : une value chaîne autorisée. Choix multiple : liste de values chaînes autorisées sans doublons. Texte : chaîne non vide, max 5000. Nombre : valeur numérique (le serveur accepte aussi une chaîne numérique). Aucune valeur booléenne pour les choix."
-          }
-        },
-        "required": [
-          "question_id",
-          "valeur"
-        ]
-      },
-      "AnswersRequest": {
-        "type": "object",
-        "properties": {
-          "diagnostic_id": {
-            "type": "integer",
-            "minimum": 1,
-            "example": 1
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "pending",
-              "completed"
-            ]
-          },
-          "responses": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AnswerInput"
-            },
-            "minItems": 1,
-            "description": "Chaque question_id doit être distinct. Les réponses omises restent enregistrées."
-          }
-        },
-        "required": [
-          "diagnostic_id",
-          "status",
-          "responses"
-        ]
-      },
-      "SavedAnswer": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "minimum": 1,
-            "example": 1
-          },
-          "diagnostic_id": {
-            "type": "integer",
-            "minimum": 1,
-            "example": 1
-          },
-          "question_id": {
-            "type": "integer",
-            "minimum": 1,
-            "example": 1
-          },
-          "valeur": {
-            "oneOf": [
-              {
-                "type": "string",
-                "nullable": true
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
-            ]
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          }
-        },
-        "required": [
-          "id",
-          "diagnostic_id",
-          "question_id",
-          "valeur"
-        ]
-      },
-      "QuestionCalculation": {
-        "type": "object",
-        "properties": {
-          "question_id": {
-            "type": "integer",
-            "minimum": 1,
-            "example": 1
-          },
-          "question_code": {
-            "type": "string"
-          },
-          "answer": {
-            "oneOf": [
-              {
-                "type": "string",
-                "nullable": true
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "array",
-                "items": {
-                  "type": "string"
-                }
-              }
-            ]
-          },
-          "points": {
-            "type": "integer",
-            "nullable": true,
-            "minimum": 0
-          },
-          "max_points": {
-            "type": "integer",
-            "nullable": true,
-            "minimum": 0
-          },
-          "included": {
-            "type": "boolean"
-          },
-          "exclusion_reason": {
-            "type": "string",
-            "nullable": true
-          },
-          "exclusion_label": {
-            "type": "string",
-            "nullable": true
-          }
-        },
-        "required": [
-          "question_id",
-          "question_code",
-          "answer",
-          "points",
-          "max_points",
-          "included",
-          "exclusion_reason",
-          "exclusion_label"
-        ]
-      },
-      "DomainCalculation": {
-        "type": "object",
-        "properties": {
-          "domain_id": {
-            "type": "integer",
-            "minimum": 1,
-            "example": 1
-          },
-          "is_scored": {
-            "type": "boolean"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "not_scored",
-              "insufficient_coverage",
-              "evaluated"
-            ]
-          },
-          "score": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100,
-            "nullable": true
-          },
-          "earned_points": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "max_points": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "coverage": {
-            "type": "object",
-            "properties": {
-              "evaluated": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "total": {
-                "type": "integer",
-                "minimum": 0
-              }
-            },
-            "required": [
-              "evaluated",
-              "total"
-            ]
-          },
-          "questions": {
-            "type": "object",
-            "additionalProperties": {
-              "$ref": "#/components/schemas/QuestionCalculation"
-            }
-          }
-        },
-        "required": [
-          "domain_id",
-          "is_scored",
-          "status",
-          "score",
-          "earned_points",
-          "max_points",
-          "coverage",
-          "questions"
-        ]
-      },
-      "ScoringDetails": {
-        "type": "object",
-        "properties": {
-          "scoring_version": {
-            "type": "string",
-            "example": "1.0.0"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "evaluated",
-              "partial"
-            ]
-          },
-          "score": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100,
-            "nullable": true
-          },
-          "coverage": {
-            "type": "object",
-            "properties": {
-              "evaluated_domains": {
-                "type": "integer",
-                "minimum": 0
-              },
-              "scored_domains": {
-                "type": "integer",
-                "minimum": 0
-              }
-            },
-            "required": [
-              "evaluated_domains",
-              "scored_domains"
-            ]
-          },
-          "domains": {
-            "type": "object",
-            "properties": {
-              "general": {
-                "$ref": "#/components/schemas/DomainCalculation"
-              },
-              "finance": {
-                "$ref": "#/components/schemas/DomainCalculation"
-              },
-              "comptabilite": {
-                "$ref": "#/components/schemas/DomainCalculation"
-              },
-              "commercial": {
-                "$ref": "#/components/schemas/DomainCalculation"
-              }
-            },
-            "required": [
-              "general",
-              "finance",
-              "comptabilite",
-              "commercial"
-            ]
-          }
-        },
-        "required": [
-          "scoring_version",
-          "status",
-          "score",
-          "coverage",
-          "domains"
-        ]
-      },
-      "Finding": {
-        "type": "object",
-        "properties": {
-          "text": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 1500
-          },
-          "question_codes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "minItems": 1,
-            "maxItems": 12,
-            "description": "Codes de questions présents dans le diagnostic analysé."
-          }
-        },
-        "required": [
-          "text",
-          "question_codes"
-        ]
-      },
-      "Weakness": {
-        "type": "object",
-        "properties": {
-          "text": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 1500
-          },
-          "question_codes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "minItems": 1,
-            "maxItems": 12,
-            "description": "Codes de questions présents dans le diagnostic analysé."
-          },
-          "kind": {
-            "type": "string",
-            "enum": [
-              "observed",
-              "limitation"
-            ]
-          }
-        },
-        "required": [
-          "text",
-          "question_codes",
-          "kind"
-        ]
-      },
-      "Recommendation": {
-        "type": "object",
-        "properties": {
-          "action": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 1500
-          },
-          "expected_benefit": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 1500
-          },
-          "question_codes": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "minItems": 1,
-            "maxItems": 12,
-            "description": "Codes de questions présents dans le diagnostic analysé."
-          }
-        },
-        "required": [
-          "action",
-          "expected_benefit",
-          "question_codes"
-        ]
-      },
-      "Analysis": {
-        "type": "object",
-        "properties": {
-          "summary": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 3000
-          },
-          "strengths": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Finding"
-            },
-            "maxItems": 5
-          },
-          "weaknesses": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Weakness"
-            },
-            "minItems": 1,
-            "maxItems": 5
-          },
-          "recommendations": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Recommendation"
-            },
-            "minItems": 1,
-            "maxItems": 3
-          }
-        },
-        "required": [
-          "summary",
-          "strengths",
-          "weaknesses",
-          "recommendations"
-        ]
-      },
-      "NullableAnalysis": {
-        "type": "object",
-        "properties": {
-          "summary": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 3000
-          },
-          "strengths": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Finding"
-            },
-            "maxItems": 5
-          },
-          "weaknesses": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Weakness"
-            },
-            "minItems": 1,
-            "maxItems": 5
-          },
-          "recommendations": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Recommendation"
-            },
-            "minItems": 1,
-            "maxItems": 3
-          }
-        },
-        "required": [
-          "summary",
-          "strengths",
-          "weaknesses",
-          "recommendations"
-        ],
-        "nullable": true
-      },
-      "Result": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "minimum": 1,
-            "example": 1
-          },
-          "diagnostic_id": {
-            "type": "integer",
-            "minimum": 1,
-            "example": 1
-          },
-          "score": {
-            "type": "string",
-            "nullable": true,
-            "pattern": "^\\d+\\.\\d{2}$",
-            "example": "66.67",
-            "description": "Décimal sérialisé en chaîne. null signifie non calculable, pas zéro."
-          },
-          "scoring_version": {
-            "type": "string",
-            "nullable": true
-          },
-          "scoring_details": {
-            "type": "object",
-            "properties": {
-              "scoring_version": {
-                "type": "string",
-                "example": "1.0.0"
-              },
-              "status": {
-                "type": "string",
-                "enum": [
-                  "evaluated",
-                  "partial"
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
                 ]
-              },
-              "score": {
-                "type": "number",
-                "minimum": 0,
-                "maximum": 100,
-                "nullable": true
-              },
-              "coverage": {
-                "type": "object",
-                "properties": {
-                  "evaluated_domains": {
-                    "type": "integer",
-                    "minimum": 0
-                  },
-                  "scored_domains": {
-                    "type": "integer",
-                    "minimum": 0
-                  }
+            }
+        },
+        "/api/display/questionnaire": {
+            "get": {
+                "tags": [
+                    "Diagnostic"
+                ],
+                "summary": "Charger le questionnaire et les réponses",
+                "description": "DiagnosticController::indexQuestionnaire. Rôle user. Domaines non vides triés par ordre, questions par ordre puis id. Retourne les réponses du diagnostic connecté. Toutes les questions, y compris Général non noté, sont obligatoires à la finalisation. Un diagnostic completed reste consultable.",
+                "operationId": "indexQuestionnaire",
+                "responses": {
+                    "200": {
+                        "description": "Succès",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data"
+                                    ],
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "enum": [
+                                                true
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Questionnaire"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
                 },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/store/answers": {
+            "post": {
+                "tags": [
+                    "Diagnostic"
+                ],
+                "summary": "Enregistrer ou terminer le diagnostic",
+                "description": "DiagnosticController::storeAnswers. Rôle user, propriétaire seulement. pending sauvegarde les réponses envoyées sans supprimer les autres. completed revalide toutes les réponses, calcule et persiste le résultat, termine le diagnostic puis déclenche le job IA. La finalisation est définitive. result=null pour pending. Pour completed, lire analysis_status : l’IA peut être en attente, en cours, terminée ou en échec. Un score global null est possible même avec toutes les réponses. Pas de tableau responses vide, même pour completed. Le barème actuel requiert les 12 questions configurées (texte/choix unique), malgré les 4 types acceptés par la validation des réponses.",
+                "operationId": "storeAnswers",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AnswersRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Succès",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data"
+                                    ],
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "enum": [
+                                                true
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/AnswersData"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Validation"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/ServerError"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/diagnostics/{diagnostic}/result": {
+            "get": {
+                "tags": [
+                    "Résultats"
+                ],
+                "summary": "Consulter le résultat persisté",
+                "description": "DiagnosticController::showResult. Rôle user, propriétaire seulement. 404 si aucun résultat. Le score est une chaîne décimale ou null ; scoring_details contient des nombres. Au moins 2 questions évaluables par domaine et les 3 domaines évaluables sont requis pour le score global. Général n’est pas noté. Lire régulièrement pendant analysis_status=pending/processing ; arrêter à completed/failed. Aucun appel IA n’est déclenché par cette lecture.",
+                "operationId": "showResult",
+                "parameters": [
+                    {
+                        "name": "diagnostic",
+                        "in": "path",
+                        "description": "ID du diagnostic appartenant au compte connecté, obtenu via le questionnaire. Ce n’est pas l’ID du résultat.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Succès",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data"
+                                    ],
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "enum": [
+                                                true
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Result"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/diagnostics/{diagnostic}/interpretation/retry": {
+            "post": {
+                "tags": [
+                    "Résultats"
+                ],
+                "summary": "Relancer une interprétation échouée",
+                "description": "DiagnosticController::retryInterpretation. Rôle user, propriétaire seulement. Aucun corps nécessaire. Accepte uniquement analysis_status=failed avec les données nécessaires. Ne recalcule pas le score. Le 202 confirme la relance, pas la réussite de l’IA ; relire le résultat. Le job nécessite un worker avec une connexion de queue asynchrone.",
+                "operationId": "retryInterpretation",
+                "parameters": [
+                    {
+                        "name": "diagnostic",
+                        "in": "path",
+                        "description": "ID du diagnostic appartenant au compte connecté, obtenu via le questionnaire. Ce n’est pas l’ID du résultat.",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "example": 1
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Succès",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data"
+                                    ],
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "enum": [
+                                                true
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Result"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Conflict"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/store/domains": {
+            "post": {
+                "tags": [
+                    "Administration"
+                ],
+                "summary": "Créer un domaine",
+                "description": "QuestionsController::storeDomain. Rôle admin uniquement. ordre doit être unique entre 1 et 8 ; un intitulé déjà utilisé produit 400. Général doit rester is_scored=false conformément au barème. Aucune route de liste, modification ou suppression administrateur.",
+                "operationId": "storeDomain",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DomainRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Succès",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data"
+                                    ],
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "enum": [
+                                                true
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Domain"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/BadRequest"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Validation"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/store/questions": {
+            "post": {
+                "tags": [
+                    "Administration"
+                ],
+                "summary": "Créer une question",
+                "description": "QuestionsController::storeQuestion. Rôle admin uniquement. Options requises pour les choix : value et label non vides, value distinctes. Ne pas envoyer d’options pour text/number. question_code n’est pas accepté par la validation actuelle. Ajouter une question sans adapter le code et le barème peut empêcher toute finalisation ; cet endpoint ne configure pas le scoring.",
+                "operationId": "storeQuestion",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/QuestionRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Succès",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "required": [
+                                        "success",
+                                        "message",
+                                        "data"
+                                    ],
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "enum": [
+                                                true
+                                            ]
+                                        },
+                                        "message": {
+                                            "type": "string"
+                                        },
+                                        "data": {
+                                            "$ref": "#/components/schemas/Question"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Unauthorized"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Forbidden"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/NotFound"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Validation"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Role": {
                 "required": [
-                  "evaluated_domains",
-                  "scored_domains"
-                ]
-              },
-              "domains": {
-                "type": "object",
+                    "id",
+                    "intitule"
+                ],
                 "properties": {
-                  "general": {
-                    "$ref": "#/components/schemas/DomainCalculation"
-                  },
-                  "finance": {
-                    "$ref": "#/components/schemas/DomainCalculation"
-                  },
-                  "comptabilite": {
-                    "$ref": "#/components/schemas/DomainCalculation"
-                  },
-                  "commercial": {
-                    "$ref": "#/components/schemas/DomainCalculation"
-                  }
+                    "id": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "example": 1
+                    },
+                    "intitule": {
+                        "type": "string",
+                        "enum": [
+                            "user",
+                            "admin"
+                        ]
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
                 },
-                "required": [
-                  "general",
-                  "finance",
-                  "comptabilite",
-                  "commercial"
-                ]
-              }
+                "type": "object"
             },
-            "required": [
-              "scoring_version",
-              "status",
-              "score",
-              "coverage",
-              "domains"
-            ],
-            "nullable": true
-          },
-          "analysis": {
-            "$ref": "#/components/schemas/NullableAnalysis"
-          },
-          "analysis_status": {
-            "type": "string",
-            "enum": [
-              "pending",
-              "processing",
-              "completed",
-              "failed"
-            ]
-          },
-          "analysis_error": {
-            "type": "string",
-            "nullable": true
-          },
-          "analysis_provider": {
-            "type": "string",
-            "nullable": true,
-            "example": "gemini"
-          },
-          "analysis_model": {
-            "type": "string",
-            "nullable": true
-          },
-          "prompt_version": {
-            "type": "string",
-            "nullable": true
-          },
-          "analyzed_at": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          }
-        },
-        "required": [
-          "id",
-          "diagnostic_id",
-          "score",
-          "analysis",
-          "analysis_status"
-        ],
-        "description": "Résultat persisté. interpretation_input est masqué. Les anciennes lignes peuvent ne pas avoir de détail de scoring ; la relance les refuse alors avec 409."
-      },
-      "NullableResult": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "minimum": 1,
-            "example": 1
-          },
-          "diagnostic_id": {
-            "type": "integer",
-            "minimum": 1,
-            "example": 1
-          },
-          "score": {
-            "type": "string",
-            "nullable": true,
-            "pattern": "^\\d+\\.\\d{2}$",
-            "example": "66.67",
-            "description": "Décimal sérialisé en chaîne. null signifie non calculable, pas zéro."
-          },
-          "scoring_version": {
-            "type": "string",
-            "nullable": true
-          },
-          "scoring_details": {
-            "type": "object",
-            "properties": {
-              "scoring_version": {
-                "type": "string",
-                "example": "1.0.0"
-              },
-              "status": {
-                "type": "string",
-                "enum": [
-                  "evaluated",
-                  "partial"
+            "User": {
+                "required": [
+                    "id",
+                    "name",
+                    "email",
+                    "role_id"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "example": 1
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "role_id": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "example": 1
+                    },
+                    "email_verified_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "AuthenticatedUser": {
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/User"
+                    },
+                    {
+                        "required": [
+                            "role"
+                        ],
+                        "properties": {
+                            "role": {
+                                "$ref": "#/components/schemas/Role"
+                            }
+                        },
+                        "type": "object"
+                    }
                 ]
-              },
-              "score": {
-                "type": "number",
-                "minimum": 0,
-                "maximum": 100,
+            },
+            "AuthData": {
+                "required": [
+                    "token",
+                    "user"
+                ],
+                "properties": {
+                    "token": {
+                        "description": "Token Sanctum à copier dans Authorize, sans le préfixe Bearer.",
+                        "type": "string"
+                    },
+                    "user": {
+                        "$ref": "#/components/schemas/AuthenticatedUser"
+                    }
+                },
+                "type": "object"
+            },
+            "RegisterRequest": {
+                "required": [
+                    "name",
+                    "email",
+                    "password"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "minLength": 1,
+                        "example": "Atelier Exemple"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 255,
+                        "example": "entreprise@example.com"
+                    },
+                    "password": {
+                        "type": "string",
+                        "format": "password",
+                        "minLength": 8,
+                        "example": "ExempleMotDePasse2026!"
+                    }
+                },
+                "type": "object"
+            },
+            "LoginRequest": {
+                "required": [
+                    "email",
+                    "password"
+                ],
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "maxLength": 255,
+                        "example": "entreprise@example.com"
+                    },
+                    "password": {
+                        "type": "string",
+                        "format": "password",
+                        "minLength": 8,
+                        "example": "ExempleMotDePasse2026!"
+                    }
+                },
+                "type": "object"
+            },
+            "Error": {
+                "description": "Les erreurs Laravel peuvent ne contenir que message. Les contrôleurs peuvent ajouter success:false et errors:null.",
+                "required": [
+                    "message"
+                ],
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "enum": [
+                            false
+                        ]
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "errors": {
+                        "type": "object",
+                        "nullable": true,
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "ValidationError": {
+                "required": [
+                    "message",
+                    "errors"
+                ],
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "enum": [
+                            false
+                        ]
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "errors": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "type": "object",
+                "example": {
+                    "message": "The given data was invalid.",
+                    "errors": {
+                        "responses.0.valeur": [
+                            "The selected responses.0.valeur is invalid."
+                        ]
+                    }
+                }
+            },
+            "Option": {
+                "required": [
+                    "value",
+                    "label"
+                ],
+                "properties": {
+                    "value": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "minLength": 1
+                    },
+                    "label": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "minLength": 1
+                    }
+                },
+                "type": "object",
+                "additionalProperties": false
+            },
+            "DomainRequest": {
+                "required": [
+                    "intitule",
+                    "ordre",
+                    "is_scored"
+                ],
+                "properties": {
+                    "intitule": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "minLength": 1
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "ordre": {
+                        "description": "Unique parmi tous les domaines.",
+                        "type": "integer",
+                        "maximum": 8,
+                        "minimum": 1
+                    },
+                    "is_scored": {
+                        "type": "boolean"
+                    }
+                },
+                "type": "object"
+            },
+            "Domain": {
+                "required": [
+                    "id",
+                    "intitule",
+                    "ordre",
+                    "is_scored"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "example": 1
+                    },
+                    "intitule": {
+                        "type": "string",
+                        "maxLength": 100,
+                        "minLength": 1
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "ordre": {
+                        "description": "Unique parmi tous les domaines.",
+                        "type": "integer",
+                        "maximum": 8,
+                        "minimum": 1
+                    },
+                    "is_scored": {
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "QuestionRequest": {
+                "description": "Options obligatoires pour les choix ; omettre options pour texte/nombre. question_code ne fait pas partie des champs validés par cet endpoint.",
+                "oneOf": [
+                    {
+                        "required": [
+                            "intitule",
+                            "domain_id",
+                            "ordre",
+                            "type",
+                            "options"
+                        ],
+                        "properties": {
+                            "intitule": {
+                                "type": "string",
+                                "maxLength": 255,
+                                "minLength": 1
+                            },
+                            "domain_id": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "example": 1
+                            },
+                            "ordre": {
+                                "type": "integer",
+                                "minimum": 1
+                            },
+                            "type": {
+                                "type": "string",
+                                "enum": [
+                                    "unique_choice",
+                                    "multiple_choice"
+                                ]
+                            },
+                            "options": {
+                                "description": "Les value doivent être distinctes dans une même question.",
+                                "type": "array",
+                                "items": {
+                                    "$ref": "#/components/schemas/Option"
+                                },
+                                "minItems": 2
+                            }
+                        },
+                        "type": "object"
+                    },
+                    {
+                        "required": [
+                            "intitule",
+                            "domain_id",
+                            "ordre",
+                            "type"
+                        ],
+                        "properties": {
+                            "intitule": {
+                                "type": "string",
+                                "maxLength": 255,
+                                "minLength": 1
+                            },
+                            "domain_id": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "example": 1
+                            },
+                            "ordre": {
+                                "type": "integer",
+                                "minimum": 1
+                            },
+                            "type": {
+                                "type": "string",
+                                "enum": [
+                                    "text",
+                                    "number"
+                                ]
+                            }
+                        },
+                        "type": "object"
+                    }
+                ]
+            },
+            "Question": {
+                "required": [
+                    "id",
+                    "intitule",
+                    "domain_id",
+                    "ordre",
+                    "type"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "example": 1
+                    },
+                    "intitule": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "minLength": 1
+                    },
+                    "domain_id": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "example": 1
+                    },
+                    "ordre": {
+                        "type": "integer",
+                        "minimum": 1
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "unique_choice",
+                            "multiple_choice",
+                            "text",
+                            "number"
+                        ]
+                    },
+                    "options": {
+                        "description": "Les value doivent être distinctes dans une même question.",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Option"
+                        },
+                        "minItems": 2,
+                        "nullable": true
+                    },
+                    "question_code": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "QuestionnaireQuestion": {
+                "required": [
+                    "id",
+                    "intitule",
+                    "type",
+                    "ordre",
+                    "options",
+                    "valeur"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "example": 1
+                    },
+                    "intitule": {
+                        "type": "string"
+                    },
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "unique_choice",
+                            "multiple_choice",
+                            "text",
+                            "number"
+                        ]
+                    },
+                    "ordre": {
+                        "type": "integer"
+                    },
+                    "options": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Option"
+                        },
+                        "nullable": true
+                    },
+                    "valeur": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "nullable": true
+                            },
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        ]
+                    }
+                },
+                "type": "object"
+            },
+            "QuestionnaireDomain": {
+                "required": [
+                    "id",
+                    "intitule",
+                    "description",
+                    "ordre",
+                    "is_scored",
+                    "questions"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "example": 1
+                    },
+                    "intitule": {
+                        "type": "string"
+                    },
+                    "description": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "ordre": {
+                        "type": "integer"
+                    },
+                    "is_scored": {
+                        "type": "boolean"
+                    },
+                    "questions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/QuestionnaireQuestion"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "Questionnaire": {
+                "required": [
+                    "diagnostic",
+                    "domains"
+                ],
+                "properties": {
+                    "diagnostic": {
+                        "required": [
+                            "id",
+                            "status",
+                            "completed_at"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "example": 1
+                            },
+                            "status": {
+                                "type": "string",
+                                "enum": [
+                                    "baseline",
+                                    "pending",
+                                    "completed"
+                                ]
+                            },
+                            "completed_at": {
+                                "description": "Date brute du modèle Diagnostic, sans cast datetime ; null avant finalisation.",
+                                "type": "string",
+                                "example": "2026-09-14 10:00:00",
+                                "nullable": true
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "domains": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/QuestionnaireDomain"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "AnswerInput": {
+                "required": [
+                    "question_id",
+                    "valeur"
+                ],
+                "properties": {
+                    "question_id": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "example": 1
+                    },
+                    "valeur": {
+                        "description": "Dépend du type de la question en base. Choix unique : une value chaîne autorisée. Choix multiple : liste de values chaînes autorisées sans doublons. Texte : chaîne non vide, max 5000. Nombre : valeur numérique (le serveur accepte aussi une chaîne numérique). Aucune valeur booléenne pour les choix.",
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 5000,
+                                "minLength": 1
+                            },
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string",
+                                    "minLength": 1
+                                },
+                                "minItems": 1,
+                                "uniqueItems": true
+                            }
+                        ]
+                    }
+                },
+                "type": "object"
+            },
+            "AnswersRequest": {
+                "required": [
+                    "diagnostic_id",
+                    "status",
+                    "responses"
+                ],
+                "properties": {
+                    "diagnostic_id": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "example": 1
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "completed"
+                        ]
+                    },
+                    "responses": {
+                        "description": "Chaque question_id doit être distinct. Les réponses omises restent enregistrées.",
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/AnswerInput"
+                        },
+                        "minItems": 1
+                    }
+                },
+                "type": "object"
+            },
+            "SavedAnswer": {
+                "required": [
+                    "id",
+                    "diagnostic_id",
+                    "question_id",
+                    "valeur"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "example": 1
+                    },
+                    "diagnostic_id": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "example": 1
+                    },
+                    "question_id": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "example": 1
+                    },
+                    "valeur": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "nullable": true
+                            },
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        ]
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "QuestionCalculation": {
+                "required": [
+                    "question_id",
+                    "question_code",
+                    "answer",
+                    "points",
+                    "max_points",
+                    "included",
+                    "exclusion_reason",
+                    "exclusion_label"
+                ],
+                "properties": {
+                    "question_id": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "example": 1
+                    },
+                    "question_code": {
+                        "type": "string"
+                    },
+                    "answer": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "nullable": true
+                            },
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            }
+                        ]
+                    },
+                    "points": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "nullable": true
+                    },
+                    "max_points": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "nullable": true
+                    },
+                    "included": {
+                        "type": "boolean"
+                    },
+                    "exclusion_reason": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "exclusion_label": {
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "DomainCalculation": {
+                "required": [
+                    "domain_id",
+                    "is_scored",
+                    "status",
+                    "score",
+                    "earned_points",
+                    "max_points",
+                    "coverage",
+                    "questions"
+                ],
+                "properties": {
+                    "domain_id": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "example": 1
+                    },
+                    "is_scored": {
+                        "type": "boolean"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "not_scored",
+                            "insufficient_coverage",
+                            "evaluated"
+                        ]
+                    },
+                    "score": {
+                        "type": "number",
+                        "maximum": 100,
+                        "minimum": 0,
+                        "nullable": true
+                    },
+                    "earned_points": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "max_points": {
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "coverage": {
+                        "required": [
+                            "evaluated",
+                            "total"
+                        ],
+                        "properties": {
+                            "evaluated": {
+                                "type": "integer",
+                                "minimum": 0
+                            },
+                            "total": {
+                                "type": "integer",
+                                "minimum": 0
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "questions": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/QuestionCalculation"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "ScoringDetails": {
+                "required": [
+                    "scoring_version",
+                    "status",
+                    "score",
+                    "coverage",
+                    "domains"
+                ],
+                "properties": {
+                    "scoring_version": {
+                        "type": "string",
+                        "example": "1.0.0"
+                    },
+                    "status": {
+                        "type": "string",
+                        "enum": [
+                            "evaluated",
+                            "partial"
+                        ]
+                    },
+                    "score": {
+                        "type": "number",
+                        "maximum": 100,
+                        "minimum": 0,
+                        "nullable": true
+                    },
+                    "coverage": {
+                        "required": [
+                            "evaluated_domains",
+                            "scored_domains"
+                        ],
+                        "properties": {
+                            "evaluated_domains": {
+                                "type": "integer",
+                                "minimum": 0
+                            },
+                            "scored_domains": {
+                                "type": "integer",
+                                "minimum": 0
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "domains": {
+                        "required": [
+                            "general",
+                            "finance",
+                            "comptabilite",
+                            "commercial"
+                        ],
+                        "properties": {
+                            "general": {
+                                "$ref": "#/components/schemas/DomainCalculation"
+                            },
+                            "finance": {
+                                "$ref": "#/components/schemas/DomainCalculation"
+                            },
+                            "comptabilite": {
+                                "$ref": "#/components/schemas/DomainCalculation"
+                            },
+                            "commercial": {
+                                "$ref": "#/components/schemas/DomainCalculation"
+                            }
+                        },
+                        "type": "object"
+                    }
+                },
+                "type": "object"
+            },
+            "Finding": {
+                "required": [
+                    "text",
+                    "question_codes"
+                ],
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "maxLength": 1500,
+                        "minLength": 1
+                    },
+                    "question_codes": {
+                        "description": "Codes de questions présents dans le diagnostic analysé.",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "maxItems": 12,
+                        "minItems": 1
+                    }
+                },
+                "type": "object"
+            },
+            "Weakness": {
+                "required": [
+                    "text",
+                    "question_codes",
+                    "kind"
+                ],
+                "properties": {
+                    "text": {
+                        "type": "string",
+                        "maxLength": 1500,
+                        "minLength": 1
+                    },
+                    "question_codes": {
+                        "description": "Codes de questions présents dans le diagnostic analysé.",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "maxItems": 12,
+                        "minItems": 1
+                    },
+                    "kind": {
+                        "type": "string",
+                        "enum": [
+                            "observed",
+                            "limitation"
+                        ]
+                    }
+                },
+                "type": "object"
+            },
+            "Recommendation": {
+                "required": [
+                    "action",
+                    "expected_benefit",
+                    "question_codes"
+                ],
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "maxLength": 1500,
+                        "minLength": 1
+                    },
+                    "expected_benefit": {
+                        "type": "string",
+                        "maxLength": 1500,
+                        "minLength": 1
+                    },
+                    "question_codes": {
+                        "description": "Codes de questions présents dans le diagnostic analysé.",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "maxItems": 12,
+                        "minItems": 1
+                    }
+                },
+                "type": "object"
+            },
+            "Analysis": {
+                "required": [
+                    "summary",
+                    "strengths",
+                    "weaknesses",
+                    "recommendations"
+                ],
+                "properties": {
+                    "summary": {
+                        "type": "string",
+                        "maxLength": 3000,
+                        "minLength": 1
+                    },
+                    "strengths": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Finding"
+                        },
+                        "maxItems": 5
+                    },
+                    "weaknesses": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Weakness"
+                        },
+                        "maxItems": 5,
+                        "minItems": 1
+                    },
+                    "recommendations": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Recommendation"
+                        },
+                        "maxItems": 3,
+                        "minItems": 1
+                    }
+                },
+                "type": "object"
+            },
+            "NullableAnalysis": {
+                "required": [
+                    "summary",
+                    "strengths",
+                    "weaknesses",
+                    "recommendations"
+                ],
+                "properties": {
+                    "summary": {
+                        "type": "string",
+                        "maxLength": 3000,
+                        "minLength": 1
+                    },
+                    "strengths": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Finding"
+                        },
+                        "maxItems": 5
+                    },
+                    "weaknesses": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Weakness"
+                        },
+                        "maxItems": 5,
+                        "minItems": 1
+                    },
+                    "recommendations": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Recommendation"
+                        },
+                        "maxItems": 3,
+                        "minItems": 1
+                    }
+                },
+                "type": "object",
                 "nullable": true
-              },
-              "coverage": {
-                "type": "object",
-                "properties": {
-                  "evaluated_domains": {
-                    "type": "integer",
-                    "minimum": 0
-                  },
-                  "scored_domains": {
-                    "type": "integer",
-                    "minimum": 0
-                  }
-                },
-                "required": [
-                  "evaluated_domains",
-                  "scored_domains"
-                ]
-              },
-              "domains": {
-                "type": "object",
-                "properties": {
-                  "general": {
-                    "$ref": "#/components/schemas/DomainCalculation"
-                  },
-                  "finance": {
-                    "$ref": "#/components/schemas/DomainCalculation"
-                  },
-                  "comptabilite": {
-                    "$ref": "#/components/schemas/DomainCalculation"
-                  },
-                  "commercial": {
-                    "$ref": "#/components/schemas/DomainCalculation"
-                  }
-                },
-                "required": [
-                  "general",
-                  "finance",
-                  "comptabilite",
-                  "commercial"
-                ]
-              }
             },
-            "required": [
-              "scoring_version",
-              "status",
-              "score",
-              "coverage",
-              "domains"
-            ],
-            "nullable": true
-          },
-          "analysis": {
-            "$ref": "#/components/schemas/NullableAnalysis"
-          },
-          "analysis_status": {
-            "type": "string",
-            "enum": [
-              "pending",
-              "processing",
-              "completed",
-              "failed"
-            ]
-          },
-          "analysis_error": {
-            "type": "string",
-            "nullable": true
-          },
-          "analysis_provider": {
-            "type": "string",
-            "nullable": true,
-            "example": "gemini"
-          },
-          "analysis_model": {
-            "type": "string",
-            "nullable": true
-          },
-          "prompt_version": {
-            "type": "string",
-            "nullable": true
-          },
-          "analyzed_at": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "created_at": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          },
-          "updated_at": {
-            "type": "string",
-            "format": "date-time",
-            "nullable": true
-          }
-        },
-        "required": [
-          "id",
-          "diagnostic_id",
-          "score",
-          "analysis",
-          "analysis_status"
-        ],
-        "description": "Résultat persisté. interpretation_input est masqué. Les anciennes lignes peuvent ne pas avoir de détail de scoring ; la relance les refuse alors avec 409.",
-        "nullable": true
-      },
-      "AnswersData": {
-        "type": "object",
-        "properties": {
-          "result": {
-            "$ref": "#/components/schemas/NullableResult"
-          },
-          "responses": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SavedAnswer"
+            "Result": {
+                "description": "Résultat persisté. interpretation_input est masqué. Les anciennes lignes peuvent ne pas avoir de détail de scoring ; la relance les refuse alors avec 409.",
+                "required": [
+                    "id",
+                    "diagnostic_id",
+                    "score",
+                    "analysis",
+                    "analysis_status"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "example": 1
+                    },
+                    "diagnostic_id": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "example": 1
+                    },
+                    "score": {
+                        "description": "Décimal sérialisé en chaîne. null signifie non calculable, pas zéro.",
+                        "type": "string",
+                        "pattern": "^\\d+\\.\\d{2}$",
+                        "example": "66.67",
+                        "nullable": true
+                    },
+                    "scoring_version": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "scoring_details": {
+                        "required": [
+                            "scoring_version",
+                            "status",
+                            "score",
+                            "coverage",
+                            "domains"
+                        ],
+                        "properties": {
+                            "scoring_version": {
+                                "type": "string",
+                                "example": "1.0.0"
+                            },
+                            "status": {
+                                "type": "string",
+                                "enum": [
+                                    "evaluated",
+                                    "partial"
+                                ]
+                            },
+                            "score": {
+                                "type": "number",
+                                "maximum": 100,
+                                "minimum": 0,
+                                "nullable": true
+                            },
+                            "coverage": {
+                                "required": [
+                                    "evaluated_domains",
+                                    "scored_domains"
+                                ],
+                                "properties": {
+                                    "evaluated_domains": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                    },
+                                    "scored_domains": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                    }
+                                },
+                                "type": "object"
+                            },
+                            "domains": {
+                                "required": [
+                                    "general",
+                                    "finance",
+                                    "comptabilite",
+                                    "commercial"
+                                ],
+                                "properties": {
+                                    "general": {
+                                        "$ref": "#/components/schemas/DomainCalculation"
+                                    },
+                                    "finance": {
+                                        "$ref": "#/components/schemas/DomainCalculation"
+                                    },
+                                    "comptabilite": {
+                                        "$ref": "#/components/schemas/DomainCalculation"
+                                    },
+                                    "commercial": {
+                                        "$ref": "#/components/schemas/DomainCalculation"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        },
+                        "type": "object",
+                        "nullable": true
+                    },
+                    "analysis": {
+                        "$ref": "#/components/schemas/NullableAnalysis"
+                    },
+                    "analysis_status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "processing",
+                            "completed",
+                            "failed"
+                        ]
+                    },
+                    "analysis_error": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "analysis_provider": {
+                        "type": "string",
+                        "example": "gemini",
+                        "nullable": true
+                    },
+                    "analysis_model": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "prompt_version": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "analyzed_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "NullableResult": {
+                "description": "Résultat persisté. interpretation_input est masqué. Les anciennes lignes peuvent ne pas avoir de détail de scoring ; la relance les refuse alors avec 409.",
+                "required": [
+                    "id",
+                    "diagnostic_id",
+                    "score",
+                    "analysis",
+                    "analysis_status"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "example": 1
+                    },
+                    "diagnostic_id": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "example": 1
+                    },
+                    "score": {
+                        "description": "Décimal sérialisé en chaîne. null signifie non calculable, pas zéro.",
+                        "type": "string",
+                        "pattern": "^\\d+\\.\\d{2}$",
+                        "example": "66.67",
+                        "nullable": true
+                    },
+                    "scoring_version": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "scoring_details": {
+                        "required": [
+                            "scoring_version",
+                            "status",
+                            "score",
+                            "coverage",
+                            "domains"
+                        ],
+                        "properties": {
+                            "scoring_version": {
+                                "type": "string",
+                                "example": "1.0.0"
+                            },
+                            "status": {
+                                "type": "string",
+                                "enum": [
+                                    "evaluated",
+                                    "partial"
+                                ]
+                            },
+                            "score": {
+                                "type": "number",
+                                "maximum": 100,
+                                "minimum": 0,
+                                "nullable": true
+                            },
+                            "coverage": {
+                                "required": [
+                                    "evaluated_domains",
+                                    "scored_domains"
+                                ],
+                                "properties": {
+                                    "evaluated_domains": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                    },
+                                    "scored_domains": {
+                                        "type": "integer",
+                                        "minimum": 0
+                                    }
+                                },
+                                "type": "object"
+                            },
+                            "domains": {
+                                "required": [
+                                    "general",
+                                    "finance",
+                                    "comptabilite",
+                                    "commercial"
+                                ],
+                                "properties": {
+                                    "general": {
+                                        "$ref": "#/components/schemas/DomainCalculation"
+                                    },
+                                    "finance": {
+                                        "$ref": "#/components/schemas/DomainCalculation"
+                                    },
+                                    "comptabilite": {
+                                        "$ref": "#/components/schemas/DomainCalculation"
+                                    },
+                                    "commercial": {
+                                        "$ref": "#/components/schemas/DomainCalculation"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        },
+                        "type": "object",
+                        "nullable": true
+                    },
+                    "analysis": {
+                        "$ref": "#/components/schemas/NullableAnalysis"
+                    },
+                    "analysis_status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "processing",
+                            "completed",
+                            "failed"
+                        ]
+                    },
+                    "analysis_error": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "analysis_provider": {
+                        "type": "string",
+                        "example": "gemini",
+                        "nullable": true
+                    },
+                    "analysis_model": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "prompt_version": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "analyzed_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object",
+                "nullable": true
+            },
+            "AnswersData": {
+                "required": [
+                    "result",
+                    "responses",
+                    "newStatus",
+                    "completed_at"
+                ],
+                "properties": {
+                    "result": {
+                        "$ref": "#/components/schemas/NullableResult"
+                    },
+                    "responses": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SavedAnswer"
+                        }
+                    },
+                    "newStatus": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "completed"
+                        ]
+                    },
+                    "completed_at": {
+                        "description": "Date de finalisation ; format brut du modèle, non garanti ISO 8601 dans cette réponse.",
+                        "type": "string",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
             }
-          },
-          "newStatus": {
-            "type": "string",
-            "enum": [
-              "pending",
-              "completed"
-            ]
-          },
-          "completed_at": {
-            "type": "string",
-            "nullable": true,
-            "description": "Date de finalisation ; format brut du modèle, non garanti ISO 8601 dans cette réponse."
-          }
         },
-        "required": [
-          "result",
-          "responses",
-          "newStatus",
-          "completed_at"
-        ]
-      }
+        "responses": {
+            "Unauthorized": {
+                "description": "401 : token absent/invalide ou identifiants de connexion incorrects.",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                }
+            },
+            "Forbidden": {
+                "description": "403 : rôle non autorisé.",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                }
+            },
+            "NotFound": {
+                "description": "404 : ressource absente, diagnostic inaccessible ou rôle non configuré.",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                }
+            },
+            "Validation": {
+                "description": "422 : données invalides. Les clés responses.{index}.valeur concernent la soumission ; answers.{question_id} concerne la complétude finale. diagnostic_id peut signaler un diagnostic déjà terminé.",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/ValidationError"
+                        }
+                    }
+                }
+            },
+            "Conflict": {
+                "description": "409 : seule une interprétation failed avec ses données de calcul et son instantané peut être relancée.",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                }
+            },
+            "ServerError": {
+                "description": "500 : erreur serveur, notamment incohérence entre questions et barème lors de la finalisation. La transaction de cette soumission est annulée.",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                }
+            },
+            "BadRequest": {
+                "description": "400 : un domaine de même intitulé existe déjà.",
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Error"
+                        }
+                    }
+                }
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "description": "Token Laravel Sanctum, sans préfixe Bearer dans Authorize.",
+                "scheme": "bearer"
+            }
+        }
     },
-    "responses": {
-      "Unauthorized": {
-        "description": "401 : token absent/invalide ou identifiants de connexion incorrects.",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/Error"
-            }
-          }
+    "tags": [
+        {
+            "name": "Authentification",
+            "description": "Authentification"
+        },
+        {
+            "name": "Diagnostic",
+            "description": "Diagnostic"
+        },
+        {
+            "name": "Résultats",
+            "description": "Résultats"
+        },
+        {
+            "name": "Administration",
+            "description": "Administration"
         }
-      },
-      "Forbidden": {
-        "description": "403 : rôle non autorisé.",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/Error"
-            }
-          }
-        }
-      },
-      "NotFound": {
-        "description": "404 : ressource absente, diagnostic inaccessible ou rôle non configuré.",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/Error"
-            }
-          }
-        }
-      },
-      "Validation": {
-        "description": "422 : données invalides. Les clés responses.{index}.valeur concernent la soumission ; answers.{question_id} concerne la complétude finale. diagnostic_id peut signaler un diagnostic déjà terminé.",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/ValidationError"
-            }
-          }
-        }
-      },
-      "Conflict": {
-        "description": "409 : seule une interprétation failed avec ses données de calcul et son instantané peut être relancée.",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/Error"
-            }
-          }
-        }
-      },
-      "ServerError": {
-        "description": "500 : erreur serveur, notamment incohérence entre questions et barème lors de la finalisation. La transaction de cette soumission est annulée.",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/Error"
-            }
-          }
-        }
-      },
-      "BadRequest": {
-        "description": "400 : un domaine de même intitulé existe déjà.",
-        "content": {
-          "application/json": {
-            "schema": {
-              "$ref": "#/components/schemas/Error"
-            }
-          }
-        }
-      }
-    }
-  }
+    ]
 }

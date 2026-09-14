@@ -20,6 +20,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use OpenApi\Annotations as OA;
 use Throwable;
 
 class DiagnosticController extends Controller
@@ -27,7 +28,19 @@ class DiagnosticController extends Controller
     use TraitsApiResponseTrait;
 
     /**
-     * Display questionnaire.
+     * @OA\Get(
+     *     path="/api/display/questionnaire",
+     *     operationId="indexQuestionnaire",
+     *     summary="Charger le questionnaire et les réponses",
+     *     description="DiagnosticController::indexQuestionnaire. Rôle user. Domaines non vides triés par ordre, questions par ordre puis id. Retourne les réponses du diagnostic connecté. Toutes les questions, y compris Général non noté, sont obligatoires à la finalisation. Un diagnostic completed reste consultable.",
+     *     tags={"Diagnostic"},
+     *     security={{"bearerAuth"={}}},
+     *
+     *     @OA\Response(response=200, description="Succès", @OA\JsonContent(type="object", @OA\Property(property="success", type="boolean", enum={true}), @OA\Property(property="message", type="string"), @OA\Property(property="data", ref="#/components/schemas/Questionnaire"), required={"success", "message", "data"})),
+     *     @OA\Response(response=401, ref="#/components/responses/Unauthorized"),
+     *     @OA\Response(response=403, ref="#/components/responses/Forbidden"),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound")
+     * )
      */
     public function indexQuestionnaire(Request $request): JsonResponse
     {
@@ -72,7 +85,23 @@ class DiagnosticController extends Controller
     }
 
     /**
-     * Store questionnaire answers.
+     * @OA\Post(
+     *     path="/api/store/answers",
+     *     operationId="storeAnswers",
+     *     summary="Enregistrer ou terminer le diagnostic",
+     *     description="DiagnosticController::storeAnswers. Rôle user, propriétaire seulement. pending sauvegarde les réponses envoyées sans supprimer les autres. completed revalide toutes les réponses, calcule et persiste le résultat, termine le diagnostic puis déclenche le job IA. La finalisation est définitive. result=null pour pending. Pour completed, lire analysis_status : l’IA peut être en attente, en cours, terminée ou en échec. Un score global null est possible même avec toutes les réponses. Pas de tableau responses vide, même pour completed. Le barème actuel requiert les 12 questions configurées (texte/choix unique), malgré les 4 types acceptés par la validation des réponses.",
+     *     tags={"Diagnostic"},
+     *     security={{"bearerAuth"={}}},
+     *
+     *     @OA\RequestBody(required=true, @OA\JsonContent(ref="#/components/schemas/AnswersRequest")),
+     *
+     *     @OA\Response(response=201, description="Succès", @OA\JsonContent(type="object", @OA\Property(property="success", type="boolean", enum={true}), @OA\Property(property="message", type="string"), @OA\Property(property="data", ref="#/components/schemas/AnswersData"), required={"success", "message", "data"})),
+     *     @OA\Response(response=401, ref="#/components/responses/Unauthorized"),
+     *     @OA\Response(response=403, ref="#/components/responses/Forbidden"),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=422, ref="#/components/responses/Validation"),
+     *     @OA\Response(response=500, ref="#/components/responses/ServerError")
+     * )
      */
     public function storeAnswers(AnswersRequest $request, DiagnosticScoringService $scoring)
     {
@@ -232,6 +261,23 @@ class DiagnosticController extends Controller
         );
     }
 
+    /**
+     * @OA\Get(
+     *     path="/api/diagnostics/{diagnostic}/result",
+     *     operationId="showResult",
+     *     summary="Consulter le résultat persisté",
+     *     description="DiagnosticController::showResult. Rôle user, propriétaire seulement. 404 si aucun résultat. Le score est une chaîne décimale ou null ; scoring_details contient des nombres. Au moins 2 questions évaluables par domaine et les 3 domaines évaluables sont requis pour le score global. Général n’est pas noté. Lire régulièrement pendant analysis_status=pending/processing ; arrêter à completed/failed. Aucun appel IA n’est déclenché par cette lecture.",
+     *     tags={"Résultats"},
+     *     security={{"bearerAuth"={}}},
+     *
+     *     @OA\Parameter(name="diagnostic", in="path", required=true, description="ID du diagnostic appartenant au compte connecté, obtenu via le questionnaire. Ce n’est pas l’ID du résultat.", @OA\Schema(type="integer", minimum=1, example=1)),
+     *
+     *     @OA\Response(response=200, description="Succès", @OA\JsonContent(type="object", @OA\Property(property="success", type="boolean", enum={true}), @OA\Property(property="message", type="string"), @OA\Property(property="data", ref="#/components/schemas/Result"), required={"success", "message", "data"})),
+     *     @OA\Response(response=401, ref="#/components/responses/Unauthorized"),
+     *     @OA\Response(response=403, ref="#/components/responses/Forbidden"),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound")
+     * )
+     */
     public function showResult(Request $request, int $diagnostic): JsonResponse
     {
         $owned = Diagnostic::whereKey($diagnostic)->where('user_id', $request->user()->id)->firstOrFail();
@@ -239,6 +285,24 @@ class DiagnosticController extends Controller
         return $this->successResponse($owned->result()->firstOrFail(), 'Diagnostic result.');
     }
 
+    /**
+     * @OA\Post(
+     *     path="/api/diagnostics/{diagnostic}/interpretation/retry",
+     *     operationId="retryInterpretation",
+     *     summary="Relancer une interprétation échouée",
+     *     description="DiagnosticController::retryInterpretation. Rôle user, propriétaire seulement. Aucun corps nécessaire. Accepte uniquement analysis_status=failed avec les données nécessaires. Ne recalcule pas le score. Le 202 confirme la relance, pas la réussite de l’IA ; relire le résultat. Le job nécessite un worker avec une connexion de queue asynchrone.",
+     *     tags={"Résultats"},
+     *     security={{"bearerAuth"={}}},
+     *
+     *     @OA\Parameter(name="diagnostic", in="path", required=true, description="ID du diagnostic appartenant au compte connecté, obtenu via le questionnaire. Ce n’est pas l’ID du résultat.", @OA\Schema(type="integer", minimum=1, example=1)),
+     *
+     *     @OA\Response(response=202, description="Succès", @OA\JsonContent(type="object", @OA\Property(property="success", type="boolean", enum={true}), @OA\Property(property="message", type="string"), @OA\Property(property="data", ref="#/components/schemas/Result"), required={"success", "message", "data"})),
+     *     @OA\Response(response=401, ref="#/components/responses/Unauthorized"),
+     *     @OA\Response(response=403, ref="#/components/responses/Forbidden"),
+     *     @OA\Response(response=404, ref="#/components/responses/NotFound"),
+     *     @OA\Response(response=409, ref="#/components/responses/Conflict")
+     * )
+     */
     public function retryInterpretation(Request $request, int $diagnostic): JsonResponse
     {
         $owned = Diagnostic::whereKey($diagnostic)->where('user_id', $request->user()->id)->firstOrFail();
