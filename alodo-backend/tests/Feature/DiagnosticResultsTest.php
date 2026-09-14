@@ -59,6 +59,31 @@ class DiagnosticResultsTest extends TestCase
         $this->getJson('/api/diagnostics/'.$payload['diagnostic_id'].'/result')->assertOk();
     }
 
+    public function test_sync_completion_returns_persisted_analysis_without_a_worker(): void
+    {
+        $this->seed();
+        config(['queue.default' => 'sync', 'services.gemini.api_key' => 'test-key', 'services.gemini.model' => 'test-model']);
+        Http::preventStrayRequests();
+        Http::fake(['generativelanguage.googleapis.com/*' => Http::response([
+            'candidates' => [['finishReason' => 'STOP', 'content' => ['parts' => [['text' => json_encode($this->analysis())]]]]],
+        ])]);
+        $user = User::where('email', 'entreprise@alodo.test')->firstOrFail();
+        Sanctum::actingAs($user);
+        $responses = Question::all()->map(fn (Question $question): array => [
+            'question_id' => $question->id,
+            'valeur' => $question->type === 'text' ? 'Atelier de couture' : $question->options[0]['value'],
+        ])->all();
+
+        $this->postJson('/api/store/answers', [
+            'diagnostic_id' => $user->diagnostics->id, 'status' => 'completed', 'responses' => $responses,
+        ])->assertCreated()->assertJsonPath('data.result.analysis_status', 'completed')
+            ->assertJsonPath('data.result.analysis.summary', $this->analysis()['summary']);
+
+        $this->assertDatabaseCount('jobs', 0);
+        $this->assertSame($this->analysis(), Result::firstOrFail()->analysis);
+        Http::assertSentCount(1);
+    }
+
     public function test_partial_save_creates_no_result_or_job(): void
     {
         $payload = $this->payload();
@@ -127,6 +152,29 @@ class DiagnosticResultsTest extends TestCase
         (new GenerateDiagnosticInterpretation($result->id))->handle(new DiagnosticInterpretationService);
         $this->assertSame('failed', $result->fresh()->analysis_status);
         $this->assertNull($result->fresh()->analysis);
+    }
+
+    public function test_provider_schema_omits_list_bounds_but_local_validation_enforces_them(): void
+    {
+        $payload = $this->payload();
+        $this->postJson('/api/store/answers', $payload)->assertCreated();
+        $analysis = $this->analysis();
+        $analysis['recommendations'] = array_fill(0, 4, $analysis['recommendations'][0]);
+        Http::fake(['*' => Http::response([
+            'candidates' => [['finishReason' => 'STOP', 'content' => ['parts' => [['text' => json_encode($analysis)]]]]],
+        ])]);
+        $result = Result::firstOrFail();
+
+        (new GenerateDiagnosticInterpretation($result->id))->handle(new DiagnosticInterpretationService);
+
+        Http::assertSent(function ($request): bool {
+            $schema = json_encode($request['generationConfig']['responseJsonSchema']);
+
+            return ! str_contains($schema, 'minItems') && ! str_contains($schema, 'maxItems');
+        });
+        $this->assertSame('failed', $result->fresh()->analysis_status);
+        $this->assertNull($result->fresh()->analysis);
+        $this->assertSame('0.00', $result->fresh()->score);
     }
 
     public function test_scoring_failure_rolls_back_closure_without_dispatching_ai(): void

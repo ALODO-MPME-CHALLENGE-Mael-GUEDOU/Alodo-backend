@@ -34,7 +34,9 @@ class DiagnosticInterpretationService
         PROMPT;
 
         $codes = array_column($result->interpretation_input, 'question_code');
-        $evidence = ['type' => 'array', 'items' => ['type' => 'string', 'enum' => $codes], 'minItems' => 1, 'maxItems' => 12];
+        // Les limites des listes restent validées par Laravel : leur combinaison
+        // dans le schéma imbriqué provoque un refus HTTP 400 du fournisseur.
+        $evidence = ['type' => 'array', 'items' => ['type' => 'string', 'enum' => $codes]];
         $finding = ['type' => 'object', 'properties' => ['text' => ['type' => 'string'], 'question_codes' => $evidence], 'required' => ['text', 'question_codes']];
         $weakness = $finding;
         $weakness['properties']['kind'] = ['type' => 'string', 'enum' => ['observed', 'limitation']];
@@ -43,9 +45,9 @@ class DiagnosticInterpretationService
             'type' => 'object',
             'properties' => [
                 'summary' => ['type' => 'string'],
-                'strengths' => ['type' => 'array', 'items' => $finding, 'maxItems' => 5],
-                'weaknesses' => ['type' => 'array', 'items' => $weakness, 'minItems' => 1, 'maxItems' => 5],
-                'recommendations' => ['type' => 'array', 'minItems' => 1, 'maxItems' => 3, 'items' => [
+                'strengths' => ['type' => 'array', 'items' => $finding],
+                'weaknesses' => ['type' => 'array', 'items' => $weakness],
+                'recommendations' => ['type' => 'array', 'items' => [
                     'type' => 'object', 'properties' => ['action' => ['type' => 'string'], 'expected_benefit' => ['type' => 'string'], 'question_codes' => $evidence],
                     'required' => ['action', 'expected_benefit', 'question_codes'],
                 ]],
@@ -56,20 +58,19 @@ class DiagnosticInterpretationService
         $response = Http::acceptJson()->withHeaders(['x-goog-api-key' => $key])
             ->timeout(30)
             ->post('https://generativelanguage.googleapis.com/v1beta/models/'.$model.':generateContent',
-            [
-                'systemInstruction' => ['parts' => [['text' => $prompt]]],
-                'contents' => [['role' => 'user', 'parts' => [['text' => json_encode([
-                    'scoring' => $result->scoring_details,
-                    'questionnaire' => $result->interpretation_input,
-                ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE)]]]],
-                'generationConfig' => ['responseMimeType' => 'application/json', 'responseJsonSchema' => $schema],
-            ]);
-
+                [
+                    'systemInstruction' => ['parts' => [['text' => $prompt]]],
+                    'contents' => [['role' => 'user', 'parts' => [['text' => json_encode([
+                        'scoring' => $result->scoring_details,
+                        'questionnaire' => $result->interpretation_input,
+                    ], JSON_THROW_ON_ERROR | JSON_UNESCAPED_UNICODE)]]]],
+                    'generationConfig' => ['responseMimeType' => 'application/json', 'responseJsonSchema' => $schema],
+                ]);
 
         if (! $response->successful() || $response->json('candidates.0.finishReason') !== 'STOP') {
             throw new RuntimeException('Gemini returned an unsuccessful or incomplete response.');
         }
-        
+
         $text = collect($response->json('candidates.0.content.parts', []))
             ->reject(fn (array $part): bool => ($part['thought'] ?? false) === true)->pluck('text')->implode('');
         $analysis = json_decode($text, true, 512, JSON_THROW_ON_ERROR);
