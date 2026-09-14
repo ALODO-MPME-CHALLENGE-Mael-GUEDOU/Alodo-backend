@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Result;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use RuntimeException;
@@ -68,6 +69,14 @@ class DiagnosticInterpretationService
                 ]);
 
         if (! $response->successful() || $response->json('candidates.0.finishReason') !== 'STOP') {
+            $safeCode = static fn (mixed $value): ?string => is_string($value) && preg_match('/^[A-Z0-9_]{1,80}$/', $value) ? $value : null;
+            Log::error('diagnostic.interpretation.provider_rejected', [
+                'result_id' => $result->id,
+                'http_status' => $response->status(),
+                'provider_status' => $safeCode($response->json('error.status')),
+                'finish_reason' => $safeCode($response->json('candidates.0.finishReason')),
+                'block_reason' => $safeCode($response->json('promptFeedback.blockReason')),
+            ]);
             throw new RuntimeException('Gemini returned an unsuccessful or incomplete response.');
         }
 

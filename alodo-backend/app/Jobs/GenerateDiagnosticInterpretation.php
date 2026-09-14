@@ -6,6 +6,10 @@ use App\Models\Result;
 use App\Services\DiagnosticInterpretationService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
+use JsonException;
 use Throwable;
 
 class GenerateDiagnosticInterpretation implements ShouldQueue
@@ -39,6 +43,17 @@ class GenerateDiagnosticInterpretation implements ShouldQueue
 
     public function failed(?Throwable $exception): void
     {
+        $reason = match (true) {
+            $exception instanceof ConnectionException => 'connection_or_timeout',
+            $exception instanceof ValidationException => 'invalid_analysis_fields',
+            $exception instanceof JsonException => 'invalid_json',
+            default => 'internal_or_provider_error',
+        };
+        Log::error('diagnostic.interpretation.failed', [
+            'result_id' => $this->resultId,
+            'reason' => $reason,
+            'exception_class' => $exception ? get_class($exception) : null,
+        ]);
         Result::whereKey($this->resultId)->whereIn('analysis_status', ['pending', 'processing'])->update([
             'analysis_status' => 'failed',
             'analysis_error' => 'Interprétation indisponible. Vérifiez la configuration Gemini puis relancez l’analyse.',

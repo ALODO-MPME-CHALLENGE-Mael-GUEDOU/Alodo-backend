@@ -11,6 +11,7 @@ use App\Services\DiagnosticScoringService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -125,11 +126,24 @@ class DiagnosticResultsTest extends TestCase
 
     public function test_provider_failure_preserves_result_and_can_be_retried_by_owner_only(): void
     {
+        Log::spy();
         $payload = $this->payload();
         $this->postJson('/api/store/answers', $payload)->assertCreated();
         Http::fake(['*' => Http::response(['error' => 'private provider error'], 503)]);
         $result = Result::firstOrFail();
         (new GenerateDiagnosticInterpretation($result->id))->handle(new DiagnosticInterpretationService);
+        Log::shouldHaveReceived('error')->with('diagnostic.interpretation.provider_rejected', [
+            'result_id' => $result->id,
+            'http_status' => 503,
+            'provider_status' => null,
+            'finish_reason' => null,
+            'block_reason' => null,
+        ])->once();
+        Log::shouldHaveReceived('error')->with('diagnostic.interpretation.failed', [
+            'result_id' => $result->id,
+            'reason' => 'internal_or_provider_error',
+            'exception_class' => \RuntimeException::class,
+        ])->once();
         $this->assertSame('failed', $result->fresh()->analysis_status);
         $this->assertSame('0.00', $result->fresh()->score);
         $this->assertNull($result->fresh()->analysis);
