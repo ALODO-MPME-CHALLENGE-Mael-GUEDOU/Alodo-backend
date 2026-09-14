@@ -17,4 +17,3 @@ php artisan view:cache
 
 # On démarre Apache au premier plan
 apache2-foreground
-
