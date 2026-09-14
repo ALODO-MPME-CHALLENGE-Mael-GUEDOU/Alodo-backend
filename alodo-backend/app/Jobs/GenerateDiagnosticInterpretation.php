@@ -47,7 +47,13 @@ class GenerateDiagnosticInterpretation implements ShouldQueue
             $exception instanceof ConnectionException => 'connection_or_timeout',
             $exception instanceof ValidationException => 'invalid_analysis_fields',
             $exception instanceof JsonException => 'invalid_json',
-            default => 'internal_or_provider_error',
+            default => match ($exception?->getMessage()) {
+                'Gemini configuration missing or invalid.' => 'invalid_gemini_configuration',
+                'Interpretation snapshot missing.' => 'missing_interpretation_snapshot',
+                'Gemini returned an unsuccessful or incomplete response.' => 'provider_rejected',
+                'Invalid interpretation payload.' => 'invalid_analysis_payload',
+                default => 'internal_or_provider_error',
+            },
         };
         Log::error('diagnostic.interpretation.failed', [
             'result_id' => $this->resultId,

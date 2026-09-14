@@ -141,7 +141,7 @@ class DiagnosticResultsTest extends TestCase
         ])->once();
         Log::shouldHaveReceived('error')->with('diagnostic.interpretation.failed', [
             'result_id' => $result->id,
-            'reason' => 'internal_or_provider_error',
+            'reason' => 'provider_rejected',
             'exception_class' => \RuntimeException::class,
         ])->once();
         $this->assertSame('failed', $result->fresh()->analysis_status);
